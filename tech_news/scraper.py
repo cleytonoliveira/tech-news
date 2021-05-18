@@ -1,4 +1,6 @@
+from parsel import Selector
 import requests
+from requests.exceptions import HTTPError, ReadTimeout
 import time
 
 
@@ -10,15 +12,51 @@ def fetch(url):
         response = requests.get(url, timeout=3)
         response.raise_for_status()
         return response.text
-    except requests.ReadTimeout:
+    except ReadTimeout:
         return None
-    except requests.HTTPError:
+    except HTTPError:
         return None
 
 
 # Requisito 2
 def scrape_noticia(html_content):
-    """Seu código deve vir aqui"""
+    """Busca informações do site"""
+    selector = Selector(html_content)
+    url = selector.css('[rel="canonical"]::attr(href)').get()
+    title = selector.css('.tec--article__header__title::text').get()
+    timestamp = selector.css('#js-article-date::attr(datetime)').get()
+
+    writer = selector.css('.tec--author__info__link::text').get().strip()
+    shares_count = int(
+        selector.css('.tec--toolbar__item::text').get().split()[0]
+    )
+    comments_count = int(selector.css('.tec--btn::attr(data-count)').get())
+    summary = ''.join(
+        selector.css('.tec--article__body p:first-child *::text')
+        .getall()
+    )
+    sources = [
+        space.strip()
+        for space in selector.css('[rel="noopener nofollow"]::text')
+        .getall()
+    ]
+    categories = [
+        space.strip()
+        for space in selector.css('#js-categories a::text')
+        .getall()
+    ]
+
+    return {
+        "url": url,
+        "title": title,
+        "timestamp": timestamp,
+        "writer": writer,
+        "shares_count": shares_count,
+        "comments_count": comments_count,
+        "summary": summary,
+        "sources": sources,
+        "categories": categories,
+    }
 
 
 # Requisito 3
