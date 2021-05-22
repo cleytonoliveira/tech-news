@@ -1,6 +1,7 @@
+from requests.exceptions import HTTPError, ReadTimeout
+from tech_news.database import create_news
 from parsel import Selector
 import requests
-from requests.exceptions import HTTPError, ReadTimeout
 import time
 
 
@@ -26,10 +27,8 @@ def scrape_noticia(html_content):
     title = selector.css('.tec--article__header__title::text').get()
     timestamp = selector.css('#js-article-date::attr(datetime)').get()
 
-    writer = selector.css('.tec--author__info__link::text').get().strip()
-    shares_count = int(
-        selector.css('.tec--toolbar__item::text').get().split()[0]
-    )
+    writer = selector.css('.tec--author__info__link::text').get()
+    shares_count = selector.css('.tec--toolbar__item::text').get()
     comments_count = int(selector.css('.tec--btn::attr(data-count)').get())
     summary = ''.join(
         selector.css('.tec--article__body p:first-child *::text')
@@ -37,7 +36,7 @@ def scrape_noticia(html_content):
     )
     sources = [
         space.strip()
-        for space in selector.css('[rel="noopener nofollow"]::text')
+        for space in selector.css('.z--mb-16 .tec--badge::text')
         .getall()
     ]
     categories = [
@@ -45,6 +44,14 @@ def scrape_noticia(html_content):
         for space in selector.css('#js-categories a::text')
         .getall()
     ]
+
+    if writer is not None:
+        writer = writer.strip()
+
+    if shares_count is None:
+        shares_count = 0
+    else:
+        shares_count = int(shares_count.split()[0])
 
     return {
         "url": url,
@@ -83,4 +90,18 @@ def scrape_next_page_link(html_content):
 
 # Requisito 5
 def get_tech_news(amount):
-    """Seu código deve vir aqui"""
+    """Busca a quantidade de noticias solicitadas"""
+    url = 'https://www.tecmundo.com.br/novidades'
+    news_box = []
+
+    while True:
+        content_page = fetch(url)
+        news_links = scrape_novidades(content_page)
+        for link in news_links:
+            url_news = fetch(link)
+            news = scrape_noticia(url_news)
+            news_box.append(news)
+            if len(news_box) == amount:
+                create_news(news_box)
+                return news_box
+        url = scrape_next_page_link(content_page)
