@@ -1,6 +1,17 @@
+from tech_news.database import search_news
+from requests.exceptions import HTTPError
+
+
 # Requisito 6
 def search_by_title(title):
     """Seu código deve vir aqui"""
+    try:
+        news_by_title = search_news({
+            "title": {"$regex": title, "$options": 'i'}
+        })
+        return [(new["title"], new["url"]) for new in news_by_title]
+    except HTTPError:
+        return []
 
 
 # Requisito 7
