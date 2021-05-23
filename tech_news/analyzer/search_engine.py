@@ -8,7 +8,7 @@ def search_by_title(title):
     """Busca pelo título"""
     try:
         news_by_title = search_news({
-            "title": {"$regex": title, "$options": 'i'}
+            "title": {"$regex": title, "$options": "i"}
         })
         return [(new["title"], new["url"]) for new in news_by_title]
     except HTTPError:
@@ -17,7 +17,7 @@ def search_by_title(title):
 
 # Requisito 7
 def search_by_date(date):
-    """Seu código deve vir aqui"""
+    """Busca notícia por data"""
     try:
         format = "%Y-%m-%d"
         datetime.strptime(date, format)
@@ -33,7 +33,14 @@ def search_by_date(date):
 
 # Requisito 8
 def search_by_source(source):
-    """Seu código deve vir aqui"""
+    """Busca notícia por fonte"""
+    try:
+        news_by_source = search_news({
+            "sources": {"$regex": source, "$options": "i"}
+        })
+        return [(new["title"], new["url"]) for new in news_by_source]
+    except HTTPError:
+        return []
 
 
 # Requisito 9
